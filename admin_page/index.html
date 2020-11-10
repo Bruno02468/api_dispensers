@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="administração dos dispensers">
+    <meta name="author" content="borges e zé">
+    <title>dispensers - admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600"
+    rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css"
+    href="//cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" type="text/css"
+    href="//cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+    <link rel="stylesheet" type="text/css"
+    href="simple.css">
+    <script src="admin.js" async defer></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row center">
+        <h3>dispensers de álcool</h3>
+        <h5>página de administração<h5>
+      </div>
+      <br>
+      <div id="before">
+        <div class="row center">
+          Entre com sua chave de admin:
+          <form onsubmit="return bora();">
+            <input id="in_key" type="text" value="bazorges">
+            <input type="submit" value="bora">
+          </form>
+        </div>
+      </div>
+      <div id="after">
+        <div class="row center">
+          <div class="six columns">
+            <b>chaves de API existentes:</b><br>
+            <br>
+            <ul id="keys"></ul>
+            <form onsubmit="return key_new();">
+              chave:
+              <input type="text" id="keysec"><br>
+              nível:
+              <input type="number" value="1" min="0" max="2" id="keyperm"><br>
+              <input type="submit" value="criar">
+            </form>
+          </div>
+          <div class="six columns">
+            <b>dispensers instalados:</b><br>
+            <ul id="dispensers"></ul><br>
+            <form onsubmit="return dispenser_alter();">
+              <select id="dispenser_action" onchange="dispenser_action(this);">
+                <option value="create">criar dispenser</option>
+                <option value="edit" id="dedit">---</option>
+              </select>
+              <input type="hidden" id="dispenser_id">
+              <br>
+              nome:
+              <input type="text" id="dispenser_name">
+              vol max:
+              <input type="number" id="vol_max">
+              <br>
+              descrição:<br>
+              <textarea id="dispenser_desc"></textarea>
+              <br>
+              <input type="submit" value="pronto">
+            </form>
+          </div>
+        </div>
+        <hr>
+        <div class="row center">
+          <div class="six columns">
+            <b>acionar/recarregar dispenser:</b><br>
+            <br>
+            dispenser:
+            <select id="dispensers_sel" onchange="details();"></select>
+            <br>
+            descrição:<br>
+            <code id="seldesc"></code><br>
+            <br>
+            <b>valor atual: <span id="current"></span><br></b>
+            <br>
+            <button id="consume" onclick="consume();">consumir 10 mL</button>
+            <br>
+            <button id="recharge" onclick="recharge();">recarregar</button>
+          </div>
+          <div class="six columns">
+            <b>dados importantes:</b><br>
+            <br>
+            A SER IMPLEMENTADO
+            <ul id="lows"></ul><br>
+        </div>
+      </div>
+      <hr>
+      <div class="row center">
+        <small>
+          © 2020 Borges e Zé, a dupla dinâmica de Lab Dig
+        </small>
+      </div>
+    </div>
+  </body>
+</html>

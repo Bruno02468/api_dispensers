@@ -5,7 +5,7 @@ import sys, logging, inspect
 
 # setar logging
 loglevel = logging.INFO
-if "-d" in sys.argv or "--debug" in sys.argv:
+if "-d" in sys.argv or "--debug" in sys.argv or True:
   loglevel = logging.DEBUG
 logging.basicConfig(format="[%(asctime)s] [%(levelname)s] %(message)s",
                     datefmt="%d/%m/%Y %H:%M:%S", level=loglevel)

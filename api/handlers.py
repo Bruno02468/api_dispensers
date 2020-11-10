@@ -6,7 +6,7 @@ if __name__ == "__main__":
   sys.exit(0)
 
 import sys, falcon
-from falcon.media.validators import jsonschema
+from falcon.media.validators import jsonschema as jsonschema
 
 
 # superclasse para os handlers
@@ -38,8 +38,8 @@ class Help(Handler):
     resp.media = self.instances
 
 
-# testar tokens
-class TokenVerify(Handler):
+# testar tokens e deletar também
+class Token(Handler):
   description = "Testar ou revogar tokens de autenticação."
   usage = "GET testa, DELETE revoga."
   route = "/token/{token}"
@@ -57,8 +57,20 @@ class TokenVerify(Handler):
 # criar e listar tokens
 class Tokens(Handler):
   description = "Criar e listar tokens"
-  usage = "GET lista todos, POST cria um."
+  usage = "PUT lista todos, POST cria um."
   route = "/tokens"
+
+  put_schema = {
+  "type": "object",
+  "title": "Listagem de tokens",
+    "properties": {
+      "token": {
+        "type": "string",
+        "description": "Token de admin (nível mínimo 2)"
+      }
+    },
+    "required": ["token"]
+  }
 
   post_schema = {
     "type": "object",
@@ -84,8 +96,9 @@ class Tokens(Handler):
     "required": ["segredo", "perm_level", "token"]
   }
 
-  def on_get(self, req, resp):
-    resp.media = db.all_tokens()
+  @jsonschema.validate(put_schema)
+  def on_put(self, req, resp):
+    resp.media = self.db.all_tokens()
 
   @jsonschema.validate(post_schema)
   def on_post(self, req, resp):
@@ -143,6 +156,7 @@ class Dispensers(Handler):
       )
     else:
       resp.status = falcon.HTTP_403
+
 
 # acessar e alterar dispensers
 class Dispenser(Handler):
@@ -268,7 +282,7 @@ class Acionamento(Handler):
     perm = self.db.token_perm(req.media.get("token"))
     if perm is not None and perm >= 1:
       if self.db.dispenser_exists(id_dispenser):
-        self.db.do_dispenser_delta(
+        self.db.dispenser_set(
           id_dispenser,
           req.media.get("token"),
           tipo,
@@ -322,7 +336,7 @@ class Recharge(Handler):
     perm = self.db.token_perm(req.media.get("token"))
     if perm is not None and perm >= 1:
       if self.db.dispenser_exists(id_dispenser):
-        self.db.do_dispenser_recharge(id_dispenser, req.media.get("token"))
+        self.db.dispenser_recharge(id_dispenser, req.media.get("token"))
       else:
         resp.status = falcon.HTTP_404
     else:

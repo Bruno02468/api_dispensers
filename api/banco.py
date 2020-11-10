@@ -23,48 +23,61 @@ class Banco(object):
   def get_token(self, secret):
     c = self.conn.cursor()
     c.execute(
-      "SELECT perm_level FROM tokens WHERE segredo=? AND revogado!=0;", secret
+      "SELECT perm_level FROM tokens WHERE segredo=? AND revogado=0;",
+      (secret,)
     )
     return c.fetchone()
+
+  def all_tokens(self):
+    c = self.conn.cursor()
+    c.execute("SELECT segredo, perm_level, revogado FROM tokens;")
+    return list(map(dict, c.fetchall()))
 
   def token_ok(self, token):
     return self.get_token(token) is not None
 
   def token_perm(self, token):
     k = self.get_token(token)
-    return k["perm"] if k is not None else -1
+    return k["perm_level"] if k is not None else -1
 
   def revoke(self, token):
     c = self.conn.cursor()
-    c.execute("UPDATE tokens SET revogado=1 WHERE segredo=?;", token)
-    conn.commit()
+    c.execute("UPDATE tokens SET revogado=1 WHERE segredo=?;", (token,))
+    self.conn.commit()
 
   def add_token(self, secret, perm_level):
-    c = conn.cursor()
-    c.execute("INSERT INTO tokens (segredo, perm_level) VALUES (?, ?);")
-    conn.commit()
+    c = self.conn.cursor()
+    c.execute(
+      "INSERT INTO tokens (segredo, perm_level) VALUES (?, ?);",
+      (secret, perm_level)
+    )
+    self.conn.commit()
 
   def dispenser_history(self, dispenser_id):
-    c = conn.cursor()
+    c = self.conn.cursor()
     c.execute(
       "SELECT id_acesso, token, id_dispenser, valor_antes, delta, "
       "valor_depois, tipo_evento, quando FROM acessos WHERE id_dispenser=? "
       "ORDER BY id_acesso DESC;",
-      dispenser_id
+      (dispenser_id,)
     )
-    return c.fetchall()
+    return list(map(dict, c.fetchall()))
 
   def all_dispensers(self):
-    c = conn.cursor()
+    c = self.conn.cursor()
     c.execute("SELECT id, vol_max, nome, desc FROM dispensers;")
-    return c.fetchall()
+    return list(map(dict, c.fetchall()))
 
   def dispenser_details(self, dispenser_id):
-    c = conn.cursor()
-    c.execute("SELECT id, vol_max, nome, desc FROM dispensers;")
-    dispenser = row
+    c = self.conn.cursor()
+    c.execute(
+      "SELECT id, vol_max, nome, desc FROM dispensers WHERE id=?;",
+      (dispenser_id,)
+    )
+    row = c.fetchone()
     if row is None:
       return None
+    dispenser = dict(row)
     dispenser["historico"] = self.dispenser_history(row["id"])
     dispenser["valor_atual"] = 0
     if len(dispenser["historico"]):
@@ -72,46 +85,44 @@ class Banco(object):
     return dispenser
 
   def add_dispenser(self, vol_max, name, desc = ""):
-    c = conn.cursor()
+    c = self.conn.cursor()
     c.execute(
       "INSERT INTO dispensers (vol_max, nome, desc) "
-      "VALUES (?, ?, ?);", vol_max, name, desc
+      "VALUES (?, ?, ?);", (vol_max, name, desc)
     )
-    conn.commit()
+    self.conn.commit()
 
   def dispenser_exists(self, dispenser_id):
     return self.dispenser_details(dispenser_id) is not None
 
   def edit_dispenser(self, dispenser_id, vol_max, name, desc = ""):
-    c = conn.cursor()
+    c = self.conn.cursor()
     c.execute(
       "UPDATE dispensers SET vol_max=?, nome=?, desc=? WHERE id=?;",
-      dispenser_id
+      (vol_max, name, desc, dispenser_id)
     )
-    conn.commit()
+    self.conn.commit()
 
   def delete_dispenser(self, dispenser_id):
-    c = conn.cursor()
-    c.execute("DELETE FROM dispensers WHERE id=?;", dispenser_id)
-    conn.commit()
+    c = self.conn.cursor()
+    c.execute("DELETE FROM dispensers WHERE id=?;", (dispenser_id,))
+    self.conn.commit()
 
   def dispenser_set(self, dispenser_id, token, etype, val, is_delta = False):
-    val = max(val, 0)
     current = self.dispenser_details(dispenser_id)["valor_atual"]
     if is_delta:
-      delta = val
-      after = val + delta
+      after = max(0, current + val)
     else:
-      after = val
-      delta = after - current
+      after = max(0, val)
+    delta = after - current
     isonow = datetime.now().isoformat()
-    c = conn.cursor()
+    c = self.conn.cursor()
     c.execute(
       "INSERT INTO acessos (token, id_dispenser, valor_antes, delta, "
       "valor_depois, tipo_evento, quando) VALUES (?, ?, ?, ?, ?, ?, ?);",
-      token, dispenser_id, current, delta, after, etype, isonow
+      (token, dispenser_id, current, delta, after, etype, isonow)
     )
-    conn.commit()
+    self.conn.commit()
 
   def dispenser_recharge(self, dispenser_id, token):
     val = self.dispenser_details(dispenser_id)["vol_max"]

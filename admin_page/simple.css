@@ -1,0 +1,31 @@
+/* eu continuo odiando css */
+/* eu continuo odiando css */
+/* eu continuo odiando css */
+/* eu continuo odiando css */
+/* eu continuo odiando css */
+
+input[type="number"], input[type="text"] {
+  width: 6em;
+}
+
+.center {
+  text-align: center;
+}
+
+#after {
+  display: none;
+}
+
+li {
+  text-align: left;
+}
+
+.row>div:first-child {
+  border-right: 1px solid lightgray;
+}
+
+#seldesc {
+  width: 50%;
+  text-align: left;
+  display: inline-block;
+}
