@@ -29,3 +29,7 @@ li {
   text-align: left;
   display: inline-block;
 }
+
+form {
+  margin-bottom: 0;
+}
