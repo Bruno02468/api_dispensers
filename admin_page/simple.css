@@ -33,3 +33,8 @@ li {
 form {
   margin-bottom: 0;
 }
+
+#grafico {
+  display: inline-block !important;
+  min-height: 5em;
+}

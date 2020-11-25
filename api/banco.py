@@ -62,6 +62,17 @@ class Banco(object):
       (dispenser_id,)
     )
     return list(map(dict, c.fetchall()))
+  
+  # expensive!
+  def value_at(self, dispenser_id, when):
+    det = self.dispenser_details(dispenser_id)
+    val = 0
+    for acc in det["historico"]:
+      qnd = datetime.fromisoformat(acc["quando"])
+      if qnd > when:
+        break
+      val = acc["valor_depois"]
+    return val
 
   def all_dispensers(self):
     c = self.conn.cursor()

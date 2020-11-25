@@ -14,7 +14,10 @@
     href="//cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
     <link rel="stylesheet" type="text/css"
     href="simple.css">
-    <script src="admin.js" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"
+    integrity="sha256-t9UJPrESBeG2ojKTIcFLPGF7nHi2vEc7f5A2KpH/UBU="
+    crossorigin="anonymous" defer></script>
+    <script src="admin.js" defer></script>
   </head>
   <body>
     <div class="container">
@@ -86,10 +89,39 @@
             <button id="recharge" onclick="recharge();">recarregar</button>
           </div>
           <div class="six columns">
-            <b>dados importantes:</b><br>
+            <b>histórico:</b><br>
             <br>
-            <iframe width="450" height="260" style="border: 1px solid #cccccc;" src="https://thingspeak.com/channels/1224846/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=5&title=Dist%C3%A2ncia&type=line&xaxis=Amostra&yaxis=Dist%C3%A2ncia+%28cm%29%22%3E">
-            </iframe>
+            tempo:
+            <input id="gtempo" type="number" min="1" step="1" value="10">
+            <select id="unidade">
+              <option value="segundos">segundos</option>
+              <option value="minutos" selected>minutos</option>
+              <option value="horas">horas</option>
+              <option value="dias">dias</option>
+              <option value="meses">meses</option>
+              <option value="anos">anos</option>
+            </select>
+            <br>
+            resolução:
+            <select id="escala">
+              <option value="segundo" selected>segundo</option>
+              <option value="minuto">minuto</option>
+              <option value="hora">hora</option>
+              <option value="dia">dia</option>
+              <option value="mês">mês</option>
+              <option value="ano">ano</option>
+            </select>
+            <br>
+            atualizar automaticamente:
+            <input type="checkbox" id="auto_graph">
+            <br>
+            <button onclick="rechart()">Atualizar gráfico!</button>
+          </div>
+        </div>
+        <hr>
+        <div class="row center">
+          <div class="twelve columns">
+            <canvas id="grafico"></canvas>
           </div>
         </div>
       </div>

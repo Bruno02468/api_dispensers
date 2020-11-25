@@ -24,9 +24,10 @@ api = falcon.API()
 instances = {}
 for subname in dir(handlers):
   member = getattr(handlers, subname)
-  if not inspect.isclass(member):
+  if not inspect.isclass(member) or handlers.Handler not in member.mro():
     continue
   handler = member(db)
+  print(f"{handler.__class__.__name__} tá on")
   instances[subname] = handler
   api.add_route(handler.route, handler)
 

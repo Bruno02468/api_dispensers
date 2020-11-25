@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # contém os handlers de requisição
 
+import sys, falcon
+from datetime import datetime, timedelta
+from falcon.media.validators import jsonschema as jsonschema
+
 if __name__ == "__main__":
   print("Este arquivo não deve ser executado. Ele é um módulo!")
   sys.exit(0)
-
-import sys, falcon
-from falcon.media.validators import jsonschema as jsonschema
 
 
 # superclasse para os handlers
@@ -61,8 +62,8 @@ class Tokens(Handler):
   route = "/tokens"
 
   put_schema = {
-  "type": "object",
-  "title": "Listagem de tokens",
+    "type": "object",
+    "title": "Listagem de tokens",
     "properties": {
       "token": {
         "type": "string",
@@ -341,3 +342,93 @@ class Recharge(Handler):
         resp.status = falcon.HTTP_404
     else:
       resp.status = falcon.HTTP_403
+
+# retorna dados mastigados prontos para gráfico
+class Historico(Handler):
+  description = "Retorna histórico de volume de todos os dispensers."
+  usage = "GET retorna histórico há {quantos}*{tempo} com resolução de {escala}"
+  route = "/historico/{quantos}/{unidade}/{escala}"
+
+  @staticmethod
+  def truncar(dt, res):
+    props = ["microsecond", "second", "minute", "hour", "day", "month", "year"]
+    drops = props[:props.index(res)]
+    print(drops)
+    return dt.replace(**{ pn: 0 for pn in drops })
+
+  trad_escala = {
+    "microssegundo": "microsecond",
+    "segundo": "second",
+    "minuto": "minute",
+    "hora": "hour",
+    "dia": "day",
+    "mês": "month",
+    "ano": "year"
+  }
+
+  trad_escala_plural = {
+    "microssegundos": "microseconds",
+    "segundos": "seconds",
+    "minutos": "minutes",
+    "horas": "hours",
+    "dias": "days",
+    "meses": "months",
+    "anos": "years"
+  }
+
+  def on_get(self, req, resp, quantos, unidade, escala):
+    dispensers = self.db.all_dispensers()
+    if not quantos:
+      quantos = 30
+    if not unidade:
+      unidade = "dias"
+    if not escala:
+      escala = "minuto"
+    try:
+      quantos = int(quantos)
+      assert(quantos > 0)
+    except:
+      resp.media = "Número de itens inválido!"
+      resp.status = falcon.HTTP_400
+      return
+    if escala not in Historico.trad_escala:
+      resp.media = f"Escala inválida! Válidas: {Historico.trad_escala.keys()}"
+      resp.status = falcon.HTTP_400
+      return
+    if unidade not in Historico.trad_escala_plural:
+      resp.media = f"Unidade deve ser {Historico.trad_escala_plural.keys()}!"
+      resp.status = falcon.HTTP_400
+      return
+    now = datetime.now()
+    esc = timedelta(**{ Historico.trad_escala[escala] + "s": 1 })
+    u = timedelta(**{ Historico.trad_escala_plural[unidade]: 1 })
+    min_dt = now - quantos*u
+    total = quantos*u//esc + 1
+    print(total)
+    if total > 10000:
+      resp.media = "Proibido mais do que 10 mil itens!"
+      resp.staus = falcon.HTTP_400
+    dts = [min_dt + k*esc for k in range(total)]
+    timeseries = [{} for _ in range(len(dts))]
+    tgt_index = lambda w: len([dt for dt in dts if dt < w])
+    for dispenser in dispensers:
+      did = dispenser["id"]
+      history = self.db.dispenser_history(did)
+      for acc in history:
+        when = datetime.fromisoformat(acc["quando"])
+        i = tgt_index(when)
+        if i >= len(dts):
+          # race!
+          break
+        timeseries[i][did] = acc["valor_depois"]
+    # assegurar valores iniciais
+    for dispenser in dispensers:
+      did = dispenser["id"]
+      timeseries[0][did] = self.db.value_at(did, dts[0])
+    resp.media = {
+      "tempos": [s.isoformat() for s in dts],
+      "valores": timeseries,
+      "total": total,
+      "nomes": { dispenser["id"]: dispenser["nome"] for dispenser in dispensers}
+    }
+    print(datetime.now() - now)

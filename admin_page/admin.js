@@ -1,5 +1,6 @@
 /* scripts simples pra mexer com a api */
 
+// elementos da DOM que eu não quero ficar selecionando a cada vez
 const in_key = document.getElementById("in_key");
 const divbefore = document.getElementById("before");
 const divafter = document.getElementById("after");
@@ -16,8 +17,26 @@ const ddesc = document.getElementById("dispenser_desc");
 const dedit = document.getElementById("dedit");
 const curml = document.getElementById("current");
 const curdesc = document.getElementById("seldesc");
+const canvas_grafico = document.getElementById("grafico");
+const gtempo = document.getElementById("gtempo");
+const iunidade = document.getElementById("unidade");
+const iescala = document.getElementById("escala");
+const auto_graph = document.getElementById("auto_graph");
+
+// outras constantes
 const base = "/dispenser_api";
 let token = "";
+const cores = [
+  "red", "green", "orange", "blue", "purple", "cyan", "magenta", "lime",
+  "darkgreen"
+];
+
+let icor = 0;
+function cor() {
+  let c = cores[icor % cores.length];
+  icor++;
+  return c;
+}
 
 function bora() {
   token = in_key.value;
@@ -43,6 +62,7 @@ function refresh_all() {
   key_refresh();
   dispenser_refresh();
   details();
+  if (auto_graph.checked) rechart();
 }
 
 function key_refresh() {
@@ -107,6 +127,7 @@ function key_new() {
   return false;
 }
 
+// atualiza a lista de dispensers
 function dispenser_refresh() {
   fetch(base + "/dispensers")
   .then(resp => resp.json()).then(function(json) {
@@ -148,6 +169,7 @@ function dispenser_refresh() {
   });
 }
 
+// envia o DELETE
 function dispenser_delete(did) {
   fetch(base + "/dispenser/" + did, {
     body: JSON.stringify({"token": token}),
@@ -161,6 +183,7 @@ function dispenser_delete(did) {
   });
 }
 
+// envia uma alteração
 function dispenser_alter() {
   let body = {
     "token": token,
@@ -195,6 +218,7 @@ function dispenser_alter() {
   return false;
 }
 
+// altera o dispenser listado nos detalhes
 function details() {
   let did = dsel.value;
   if (!did) return;
@@ -206,6 +230,7 @@ function details() {
   });
 }
 
+// envia consumo para o dispenser detalhado
 function consume() {
   let did = dsel.value;
   if (!did) return;
@@ -224,6 +249,7 @@ function consume() {
   });
 }
 
+// envia uma recarga para o dispenser detalhado
 function recharge() {
   let did = dsel.value;
   if (!did) return;
@@ -239,4 +265,42 @@ function recharge() {
   .then(resp => resp).then(function() {
     details();
   });
+}
+
+let chart = new Chart(canvas_grafico.getContext("2d"), {
+  type: "line",
+  responsive: true,
+  data: {}
+});
+// atualiza o gráfico de histórico
+function rechart() {
+  fetch(base + `/historico/${gtempo.value}/${iunidade.value}/${iescala.value}`)
+    .then(resp => resp.json()).then(function (json) {
+      if (json.total > 2000) return;
+      chart.data.labels = json.tempos;
+      chart.data.datasets = [];
+      data_arrs = {}
+      icor = 0;
+      for (let did in json.nomes) {
+        let nome = json.nomes[did];
+        let dataset = {
+          label: nome,
+          data: [],
+          borderColor: cor(),
+          fill: false,
+        };
+        chart.data.datasets.push(dataset);
+        data_arrs[did] = dataset.data;
+      }
+      let currs = {};
+      for (let i in json.valores) {
+        let dt = json.tempos[i];
+        let vals = json.valores[i];
+        for (let did in json.nomes) {
+          if (vals.hasOwnProperty(did)) currs[did] = vals[did];
+          data_arrs[did].push(currs[did]);
+        }
+      }
+      chart.update(0);
+    });
 }
